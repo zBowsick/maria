@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para maria 🌸</title>
+    <style>
+        body {
+            background-color: #ffeef2;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            font-family: 'Comic Sans MS', 'Courier New', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            color: #ff6584;
+            overflow-x: hidden;
+            padding-bottom: 110px; 
+        }
+
+        canvas#melodyCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* REPRODUCTOR FIJADO ABAJO */
+        .reproductor-custom {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10; 
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px dashed #ff8aa3;
+            padding: 12px 15px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 440px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 -5px 25px rgba(255, 101, 132, 0.2);
+        }
+
+        .portada-cancion {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: 3px solid #ff8aa3;
+            object-fit: cover;
+            animation: rotar 8s linear infinite;
+            animation-play-state: paused;
+        }
+
+        @keyframes rotar {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .info-musica {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .titulo-track {
+            font-size: 13px;
+            font-weight: bold;
+            color: #ff476c;
+            margin: 0;
+        }
+
+        .contenedor-ondas {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 20px;
+            margin-top: 5px;
+        }
+
+        .barra-onda {
+            width: 3px;
+            background-color: #ff8aa3;
+            border-radius: 3px;
+            height: 5px;
+            transition: height 0.1s ease;
+        }
+
+        .btn-play {
+            background: #ff476c;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(255, 71, 108, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .btn-play:hover { transform: scale(1.1); }
+
+        /* TARJETA PRINCIPAL CON FONDO SEMI-TRANSPARENTE */
+        .contenedor-mensaje {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 480px;
+            padding: 25px;
+            /* Fondo translúcido para permitir ver el corazón del canvas */
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(4px); /* Suave efecto de desenfoque de fondo */
+            -webkit-backdrop-filter: blur(4px);
+            border: 3px dashed #ff8aa3;
+            box-shadow: 0 10px 30px rgba(255, 101, 132, 0.15);
+            border-radius: 20px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            box-sizing: border-box;
+            margin-top: 40px; 
+            margin-bottom: 30px;
+        }
+
+        .contenedor-mensaje::before {
+            content: "🎀";
+            font-size: 35px;
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .mostrar { opacity: 1; transform: translateY(0); }
+        h1 { font-size: 22px; color: #ff476c; margin-top: 10px; margin-bottom: 15px; }
+        p { color: #444444; font-size: 15px; line-height: 1.6; text-align: justify; font-weight: 500; }
+
+        /* CONTADOR */
+        .seccion-contador {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 238, 242, 0.7);
+            border-radius: 15px;
+            border: 1px solid #ff8aa3;
+        }
+
+        .titulo-seccion {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ff476c;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .reloj { display: flex; justify-content: space-around; font-size: 14px; color: #333; }
+        .reloj-item span { display: block; font-size: 18px; font-weight: bold; color: #ff476c; }
+        
+        /* BOTONES INTERACTIVOS */
+        .zona-botones {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            height: 50px;
+            position: relative;
+        }
+
+        .btn {
+            font-family: 'Comic Sans MS', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px 25px;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn-si { background-color: #ff476c; color: white; }
+        .btn-si:hover { transform: scale(1.1); background-color: #ff2e57; }
+        .btn-no { background-color: #ffeef2; color: #ff6584; border: 2px solid #ff8aa3; position: absolute; }
+
+        .firma { margin-top: 25px; font-weight: bold; color: #ff476c; font-size: 16px; }
+        .flores { color: #ffd15c; font-size: 18px; margin-bottom: -10px; }
+
+        @media (max-width: 480px) {
+            .contenedor-mensaje { margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.65); }
+            h1 { font-size: 19px; }
+            p { font-size: 14px; }
+            .reloj { font-size: 12px; }
+            .reloj-item span { font-size: 15px; }
+            .reproductor-custom { bottom: 15px; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="melodyCanvas"></canvas>
+
+    <div class="contenedor-mensaje" id="tarjetaMensaje">
+        <div class="flores">🌸 ✨ 🌸</div>
+        <h1>¡Lo siento mucho, María!</h1>
+        <p><strong>Hola, mi niña hermosa.</strong></p>
+        <p>Perdóname por todos los errores que cometí a lo largo de nuestra relación. Sé perfectamente que hice cosas malas y la mayor parte del tiempo no fui el mejor novio que podía ser para ti. Tú mereces muchas cosas y lo sé; lamento que tuviera que pasar todo esto para que yo me diera cuenta de lo importante que eres en mi vida. Sin ti, ya no tengo ese algo que me hace despertarme en las mañanas sabiendo que el resto de mi día será bueno, ni tengo a esa dona que me amaba.</p>
+        
+        <div class="seccion-contador">
+            <div class="titulo-seccion">💞 Tiempo compartiendo nuestras vidas:</div>
+            <div class="reloj">
+                <div class="reloj-item"><span id="dias">00</span>Días</div>
+                <div class="reloj-item"><span id="horas">00</span>Horas</div>
+                <div class="reloj-item"><span id="minutos">00</span>Min</div>
+                <div class="reloj-item"><span id="segundos">00</span>Seg</div>
+            </div>
+        </div>
+        <div class="titulo-seccion" style="margin-top: 25px; text-align: center;">¿Me perdonas? 🥺</div>
+        <div class="zona-botones">
+            <button class="btn btn-si" id="btnSi">Sí 💕</button>
+            <button class="btn btn-no" id="btnNo">No 💔</button>
+        </div>
+
+        <div class="firma">Con todo mi amor, para María 💞</div>
+    </div>
+
+    <div class="reproductor-custom">
+        <img class="portada-cancion" id="portada" src="https://i.scdn.co/image/ab67616d0000b27341e428e9cf97df18af990835" alt="Crudo Means Raw Cover">
+        
+        <div class="info-musica">
+            <span class="titulo-track" id="trackTitle">🌸 María - Crudo Means Raw.mp3</span>
+            <div class="contenedor-ondas" id="ondasS">
+                <div class="barra-onda"></div><div class="barra-onda"></div><div class="barra-onda"></div>
+                <div class="barra-onda"></div><div class="barra-onda"></div><div class="barra-onda"></div>
+                <div class="barra-onda"></div><div class="barra-onda"></div><div class="barra-onda"></div>
+            </div>
+        </div>
+
+        <button class="btn-play" id="playBtn">▶</button>
+        
+        <audio id="musicaFondo" loop autoplay preload="auto">
+            <source src="https://cdn.discordapp.com/attachments/1516262214200463400/1516264009421033562/Maria_Crudo_Means_Raw_letra.mp3?ex=6a320266&is=6a30b0e6&hm=7918fad83c413d3b0953d18bf0995fed4fc5d4581c57d8647a48d41027d4d7b5&" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <script>
+        // --- LOGICA DE AUDIO, ONDAS Y PORTADA ---
+        const musica = document.getElementById('musicaFondo');
+        const playBtn = document.getElementById('playBtn');
+        const portada = document.getElementById('portada');
+        const barrasOnda = document.querySelectorAll('.barra-onda');
+        let ondaIntervalo;
+
+        musica.volume = 0.2; 
+
+        function simularOndas() {
+            barrasOnda.forEach(barra => {
+                const alturaRandom = Math.floor(Math.random() * 20) + 4;
+                barra.style.height = alturaRandom + 'px';
+            });
+        }
+
+        function encenderEfectosVisuales() {
+            playBtn.innerText = '⏸';
+            portada.style.animationPlayState = 'running';
+            if (!ondaIntervalo) {
+                ondaIntervalo = setInterval(simularOndas, 120);
+            }
+        }
+
+        function apagarEfectosVisuales() {
+            playBtn.innerText = '▶';
+            portada.style.animationPlayState = 'paused';
+            clearInterval(ondaIntervalo);
+            ondaIntervalo = null;
+            barrasOnda.forEach(b => b.style.height = '5px');
+        }
+
+        playBtn.addEventListener('click', () => {
+            if (musica.paused) {
+                musica.play().then(encenderEfectosVisuales).catch(console.error);
+            } else {
+                musica.pause();
+                apagarEfectosVisuales();
+            }
+        });
+
+        function intentarReproduccionAutomatica() {
+            musica.play()
+                .then(() => {
+                    encenderEfectosVisuales();
+                    removerDesencadenadores();
+                })
+                .catch(() => {
+                    console.log("Autoplay retenido por el navegador.");
+                });
+        }
+
+        function removerDesencadenadores() {
+            document.removeEventListener('click', intentarReproduccionAutomatica);
+            document.removeEventListener('touchstart', intentarReproduccionAutomatica);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            intentarReproduccionAutomatica();
+            document.addEventListener('click', intentarReproduccionAutomatica);
+            document.addEventListener('touchstart', intentarReproduccionAutomatica);
+        });
+
+        // --- CONTADOR ---
+        const fechaInicio = new Date(2024, 6, 29, 0, 0, 0); 
+
+        function actualizarContador() {
+            const ahora = new Date();
+            const diferencia = ahora - fechaInicio;
+            const d = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diferencia % (1000 * 60)) / 1000);
+
+            document.getElementById('dias').innerText = d < 10 ? '0' + d : d;
+            document.getElementById('horas').innerText = h < 10 ? '0' + h : h;
+            document.getElementById('minutos').innerText = m < 10 ? '0' + m : m;
+            document.getElementById('segundos').innerText = s < 10 ? '0' + s : s;
+        }
+        setInterval(actualizarContador, 1000);
+
+        // --- BOTÓN TRAVIESO NO ---
+        const btnNo = document.getElementById('btnNo');
+        const btnSi = document.getElementById('btnSi');
+        btnNo.style.right = "40px";
+
+        function huirBoton() {
+            const contenedor = document.querySelector('.zona-botones');
+            const posX = Math.random() * (contenedor.clientWidth - btnNo.clientWidth);
+            const posY = (Math.random() * 140) - 70;
+            btnNo.style.left = posX + 'px';
+            btnNo.style.top = posY + 'px';
+            btnNo.style.right = 'auto';
+        }
+        btnNo.addEventListener('mouseenter', huirBoton);
+        btnNo.addEventListener('touchstart', (e) => { e.preventDefault(); huirBoton(); });
+
+        btnSi.addEventListener('click', () => {
+            alert('¡Gracias por perdonarme, María! Te prometo ser mejor cada día y cuidar siempre de nosotros. ¡Te amo muchísimo! 💖🌸');
+        });
+
+        // --- CANVAS CORAZÓN BINARIO ADAPTATIVO ---
+        const canvas = document.getElementById('melodyCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let fontSize = 16;
+        let columnas = 0;
+        let caidas = [];
+        let inicioX = 0;
+        let inicioY = 2;
+        let corazonDibujado = [];
+
+        const matrizCorazon = [
+            [0,0,1,1,1,0,0,0,0,1,1,1,0,0],
+            [0,1,1,1,1,1,0,0,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
+            [0,0,1,1,1,1,1,1,1,1,1,1,0,0],
+            [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+            [0,0,0,0,1,1,1,1,1,1,0,0,0,0],
+            [0,0,0,0,0,1,1,1,1,0,0,0,0,0],
+            [0,0,0,0,0,0,1,1,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        ];
+        
+        const filasCorazon = matrizCorazon.length;
+        const columnasCorazon = matrizCorazon[0].length;
+
+        function ajustarCanvas() { 
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight; 
+            // Reducimos el tamaño de letra en celular para que el corazón quepa bien
+            fontSize = window.innerWidth < 480 ? 11 : 16;
+            columnas = Math.floor(canvas.width / fontSize);
+            if (caidas.length !== columnas) {
+                caidas = Array(columnas).fill(1).map(() => Math.floor(Math.random() * -20));
+            }
+            inicioX = Math.floor((columnas - columnasCorazon) / 2);
+            // En celulares centramos el corazón un poco más abajo para que se luzca mejor detrás del texto
+            inicioY = window.innerWidth < 480 ? 6 : 2;
+            corazonDibujado = Array(filasCorazon).fill().map(() => Array(columnasCorazon).fill(' '));
+        }
+        
+        ajustarCanvas();
+        window.addEventListener('resize', ajustarCanvas);
+
+        function dibujarCascada() {
+            ctx.fillStyle = 'rgba(255, 238, 242, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = 'bold ' + fontSize + 'px sans-serif';
+
+            for (let i = 0; i < caidas.length; i++) {
+                const texto = Math.random() > 0.5 ? '1' : '0';
+                const filaActual = caidas[i];
+                const x = i * fontSize;
+                const y = filaActual * fontSize;
+                const corazonX = i - inicioX;
+                const corazonY = filaActual - inicioY;
+
+                let esParteDelCorazon = false;
+                if (corazonY >= 0 && corazonY < filasCorazon && corazonX >= 0 && corazonX < columnasCorazon) {
+                    if (matrizCorazon[corazonY][corazonX] === 1) {
+                        esParteDelCorazon = true;
+                        if (corazonDibujado[corazonY][corazonX] === ' ') corazonDibujado[corazonY][corazonX] = texto;
+                    }
+                }
+
+                ctx.fillStyle = esParteDelCorazon ? '#ff476c' : 'rgba(255, 163, 184, 0.22)';
+
+                if (Math.random() > 0.985) {
+                    ctx.fillText(Math.random() > 0.5 ? '🌸' : '✨', x, y);
+                } else {
+                    ctx.fillText(texto, x, y);
+                }
+
+                if (y > canvas.height && Math.random() > 0.975) caidas[i] = 0;
+                caidas[i]++;
+            }
+
+            for (let y = 0; y < filasCorazon; y++) {
+                for (let x = 0; x < columnasCorazon; x++) {
+                    if (corazonDibujado[y][x] !== ' ') {
+                        ctx.fillStyle = '#ff476c';
+                        ctx.shadowBlur = 6;
+                        ctx.shadowColor = '#ff8aa3';
+                        ctx.fillText(corazonDibujado[y][x], (inicioX + x) * fontSize, (inicioY + y) * fontSize);
+                        ctx.shadowBlur = 0;
+                    }
+                }
+            }
+        }
+
+        setInterval(dibujarCascada, 30);
+        setTimeout(() => { document.getElementById('tarjetaMensaje').classList.add('mostrar'); }, 1500);
+    </script>
+</body>
+</html>
